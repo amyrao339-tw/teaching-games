@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>body{margin:0}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
+</head>
+<body>
+<title>Holiday Break 小遊戲</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* Layout: a travel passport. Home is the stamp page; each game opens as its own visa page. */
+:root{
+  --bg:#E9F1F6; --paper:#FFFFFF; --ink:#1C2A3A; --muted:#566475; --line:#D3DEE7;
+  --navy:#1D3557; --on-navy:#FFFFFF; --sea:#17789E; --sun:#E8962E; --stamp:#C8453A; --leaf:#2A8754;
+  --good-bg:#E1F3E8; --bad-bg:#FBE4E1; --chip:#EEF4F8; --card-back:#1D3557;
+  --display:"Fredoka","Noto Sans TC",system-ui,sans-serif;
+  --body:"Noto Sans TC","Fredoka",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1821; --paper:#17232F; --ink:#E6EDF3; --muted:#A2B0BE; --line:#2B3B4A;
+  --navy:#20406B; --on-navy:#FFFFFF; --sea:#5BB8DD; --sun:#F2AC52; --stamp:#EC7064; --leaf:#62C48F;
+  --good-bg:#173828; --bad-bg:#43221F; --chip:#1F2E3C; --card-back:#2A4E80; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1821; --paper:#17232F; --ink:#E6EDF3; --muted:#A2B0BE; --line:#2B3B4A;
+  --navy:#20406B; --on-navy:#FFFFFF; --sea:#5BB8DD; --sun:#F2AC52; --stamp:#EC7064; --leaf:#62C48F;
+  --good-bg:#173828; --bad-bg:#43221F; --chip:#1F2E3C; --card-back:#2A4E80; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}
+.gutter{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.inner{max-width:760px;margin:0 auto}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+
+/* Header band with airmail edge */
+.band{background:var(--navy);color:var(--on-navy);padding-block:22px 26px;position:relative}
+.band::after{content:"";position:absolute;left:0;right:0;bottom:0;height:7px;
+  background:repeating-linear-gradient(-45deg,var(--stamp) 0 14px,var(--on-navy) 14px 22px,var(--sea) 22px 36px,var(--on-navy) 36px 44px)}
+.eyebrow{font-family:var(--display);font-size:14px;letter-spacing:.12em;text-transform:uppercase;opacity:.8;margin:0}
+.band h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,6vw,40px);line-height:1.15;margin:4px 0 6px;text-wrap:balance}
+.band p{margin:0;opacity:.9}
+
+main{padding-block:24px 48px}
+
+/* Home: visa cards */
+.visas{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:0;padding:0;list-style:none}
+.visa{display:flex;flex-direction:column;gap:4px;min-height:150px;background:var(--paper);border:2px dashed var(--line);
+  border-radius:14px;padding:16px;text-decoration:none;color:inherit;position:relative;transition:transform .15s,border-color .15s}
+.visa:hover{transform:translateY(-2px);border-color:var(--sea)}
+.visa .kind{font-size:14px;font-weight:700;color:var(--sea)}
+.visa h2{font-family:var(--display);font-size:22px;margin:0;line-height:1.25}
+.visa .en{font-family:var(--display);color:var(--muted);font-size:15px}
+.visa .go{margin-top:auto;font-weight:700;color:var(--sea)}
+.stamp{position:absolute;top:12px;right:12px;width:64px;height:64px;border:3px solid var(--stamp);border-radius:50%;
+  color:var(--stamp);font-family:var(--display);font-weight:700;font-size:13px;line-height:1.1;display:grid;place-items:center;
+  text-align:center;transform:rotate(-14deg)}
+.home-note{color:var(--muted);margin:18px 0 0;font-size:15px}
+
+/* Teacher area */
+.teacher{margin-top:28px;background:var(--paper);border-radius:14px;padding:4px 16px;border:1px solid var(--line)}
+.teacher summary{font-weight:700;padding:12px 0;cursor:pointer}
+.qr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px;padding-bottom:16px}
+.qr-item{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;min-width:0}
+.qr-box{background:#FFFFFF;padding:8px;border-radius:8px;line-height:0}
+.qr-item .t{font-weight:700}
+.qr-item code{font-size:12px;color:var(--muted);word-break:break-all}
+.small-btn{min-height:36px;padding:4px 12px;border-radius:8px;border:1px solid var(--line);background:var(--chip);font-size:14px}
+
+/* Game page */
+.back{display:inline-flex;align-items:center;min-height:44px;font-weight:700;color:var(--sea);text-decoration:none}
+.game-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 16px;margin:4px 0 6px}
+.game-head h2{font-family:var(--display);font-size:clamp(26px,5vw,34px);margin:0;line-height:1.2}
+.progress{font-family:var(--display);font-weight:600;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:4px 14px;font-variant-numeric:tabular-nums}
+.rule{color:var(--muted);margin:0 0 16px}
+.stage{background:var(--paper);border-radius:16px;padding:18px;border:1px solid var(--line)}
+.feedback{min-height:52px;margin-top:14px;border-radius:12px;padding:12px 14px;font-weight:500}
+.feedback:empty{padding:0;min-height:0}
+.feedback.good{background:var(--good-bg);color:var(--ink)}
+.feedback.bad{background:var(--bad-bg);color:var(--ink)}
+.controls{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.btn{min-height:48px;padding:8px 22px;border-radius:12px;border:0;background:var(--sea);color:#FFFFFF;font-weight:700;font-size:17px}
+.btn.alt{background:var(--chip);color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.en-big{font-family:var(--display);font-weight:600}
+
+/* Memory */
+.mem{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+@media (max-width:600px){.mem{grid-template-columns:repeat(2,1fr)}}
+.mcard{min-height:84px;border-radius:12px;border:2px solid transparent;background:var(--card-back);color:var(--on-navy);
+  font-size:18px;font-weight:700;padding:6px;transition:transform .15s,background .15s}
+.mcard .face{display:none}
+.mcard .backface{font-size:26px}
+.mcard.up,.mcard.done{background:var(--paper);color:var(--ink);border-color:var(--sea)}
+.mcard.up .face,.mcard.done .face{display:block}
+.mcard.up .backface,.mcard.done .backface{display:none}
+.mcard.done{border-color:var(--leaf);background:var(--good-bg)}
+.mcard.en .face{font-family:var(--display);font-size:20px}
+
+/* Matching */
+.match{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.col h3{margin:0;font-size:14px;color:var(--muted);font-weight:700}
+.pick{min-height:56px;border-radius:12px;border:2px solid var(--line);background:var(--chip);text-align:left;padding:8px 12px;font-size:17px}
+.pick.en-big{font-size:18px}
+.pick.sel{border-color:var(--sun);background:var(--paper)}
+.pick.ok{border-color:var(--leaf);background:var(--good-bg);cursor:default}
+.pick.no{border-color:var(--stamp);background:var(--bad-bg)}
+
+/* Fill */
+.prompt-zh{font-size:24px;font-weight:700;margin:0 0 12px}
+.fill-line{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-family:var(--display);font-size:24px}
+.fill-line input{width:min(240px,100%);min-height:50px;border-radius:10px;border:2px solid var(--line);background:var(--chip);
+  padding:4px 12px;font-family:var(--display);font-size:22px}
+.fill-line input:focus{border-color:var(--sea);outline:none}
+.hint{color:var(--muted);font-size:15px;margin:10px 0 0}
+
+/* Ordering */
+.answer-line{min-height:64px;border-bottom:3px dashed var(--line);display:flex;flex-wrap:wrap;gap:8px;padding:8px 0;margin-bottom:16px}
+.answer-line:empty::before{content:"點下面的字卡，排在這裡";color:var(--muted);align-self:center}
+.bank{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:46px;padding:6px 14px;border-radius:10px;border:2px solid var(--line);background:var(--chip);font-family:var(--display);font-size:20px;font-weight:600}
+.answer-line .chip{background:var(--paper);border-color:var(--sea)}
+
+/* MCQ */
+.q{font-size:21px;font-weight:700;margin:0 0 14px}
+.opts{display:grid;gap:10px}
+.opt{min-height:54px;border-radius:12px;border:2px solid var(--line);background:var(--chip);text-align:left;padding:8px 14px;font-size:18px}
+.opt.ok{border-color:var(--leaf);background:var(--good-bg)}
+.opt.no{border-color:var(--stamp);background:var(--bad-bg)}
+
+/* Result */
+.result{text-align:center;padding:12px 0}
+.result .big{font-family:var(--display);font-size:44px;font-weight:700;margin:0;color:var(--sea);font-variant-numeric:tabular-nums}
+.result p{margin:6px 0}
+.game-qr{margin-top:24px}
+
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<div id="app"></div>
+
+<script>
+// After the first publish this is set to the artifact's link, so QR codes point at the live page.
+// On GitHub Pages the QR codes use this page's own address.
+const ARTIFACT_URL = location.origin + location.pathname;
+
+const GAMES = [
+  {id:'countries', kind:'🃏 記憶翻牌', title:'國家單字', en:'Countries', rule:'翻開兩張牌，找出英文國名和它的中文。', run:runMemory},
+  {id:'phrases', kind:'🔗 配對題', title:'假期活動', en:'Holiday Activities', rule:'先點左邊的英文片語，再點右邊對應的中文。', run:runMatch},
+  {id:'spelling', kind:'✏️ 填充題', title:'片語拼字', en:'Spell It', rule:'看中文提示，把空格裡的英文單字拼出來。', run:runFill},
+  {id:'sentences', kind:'🔀 排序題', title:'句型排排看', en:'be going to', rule:'照中文的意思，依序點字卡排出英文句子。', run:runOrder},
+  {id:'dialogue', kind:'✅ 選擇題', title:'課文對話', en:'Vicky & Fred', rule:'想一想課文裡 Vicky 和 Fred 的對話，選出正確答案。', run:runMCQ},
+];
+
+const app = document.getElementById('app');
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+
+function loadBest(){ try { return JSON.parse(localStorage.getItem('hb-best') || '{}'); } catch(e){ return {}; } }
+function saveBest(id, score, total){
+  const b = loadBest();
+  if (!b[id] || score / total >= b[id].s / b[id].t) b[id] = {s:score, t:total};
+  try { localStorage.setItem('hb-best', JSON.stringify(b)); } catch(e){}
+}
+const linkFor = id => ARTIFACT_URL ? ARTIFACT_URL + (id ? '#' + id : '') : '';
+
+function qrItem(title, url){
+  const item = el('div', 'qr-item');
+  const box = el('div', 'qr-box');
+  item.append(box, el('div', 't', title));
+  if (url && window.QRCode){
+    new QRCode(box, {text:url, width:140, height:140, colorDark:'#1C2A3A', colorLight:'#FFFFFF', correctLevel:QRCode.CorrectLevel.M});
+    item.append(el('code', '', url));
+    const copy = el('button', 'small-btn', '複製連結');
+    copy.type = 'button';
+    copy.onclick = () => {
+      navigator.clipboard.writeText(url).then(() => { copy.textContent = '已複製'; }, () => { copy.textContent = '請手動複製上方網址'; });
+    };
+    item.append(copy);
+  } else {
+    box.style.cssText = 'width:156px;height:156px;display:grid;place-items:center;line-height:1.4;color:#566475;font-size:13px';
+    box.textContent = '發佈後顯示 QR Code';
+  }
+  return item;
+}
+
+/* ---------- Home ---------- */
+function renderHome(){
+  app.innerHTML = '';
+  const band = el('header', 'band gutter');
+  band.innerHTML = '<div class="inner"><p class="eyebrow">Unit 3 · Holiday Break</p><h1>假期護照 Holiday Passport</h1><p>完成 5 個關卡，集滿護照上的印章！</p></div>';
+  const main = el('main', 'gutter');
+  const inner = el('div', 'inner');
+  const list = el('ul', 'visas');
+  const best = loadBest();
+  GAMES.forEach((g, i) => {
+    const li = el('li');
+    const a = el('a', 'visa');
+    a.href = '#' + g.id;
+    a.innerHTML = `<span class="kind">第 ${i + 1} 關 · ${g.kind}</span><h2>${g.title}</h2><span class="en">${g.en}</span><span class="go">開始 →</span>`;
+    if (best[g.id]) a.append(el('span', 'stamp', `PASS<br>${best[g.id].s}/${best[g.id].t}`));
+    li.append(a); list.append(li);
+  });
+  inner.append(list, el('p', 'home-note', '印章和分數只記在這台裝置上。'));
+
+  const t = el('details', 'teacher');
+  t.append(el('summary', '', '老師專區：QR Code 與連結'));
+  const grid = el('div', 'qr-grid');
+  grid.append(qrItem('總入口（全部關卡）', linkFor('')));
+  GAMES.forEach((g, i) => grid.append(qrItem(`第 ${i + 1} 關：${g.title}`, linkFor(g.id))));
+  t.append(grid);
+  inner.append(t);
+  main.append(inner);
+  app.append(band, main);
+}
+
+/* ---------- Game shell ---------- */
+function renderGame(g){
+  app.innerHTML = '';
+  const band = el('header', 'band gutter');
+  band.innerHTML = `<div class="inner"><p class="eyebrow">Unit 3 · Holiday Break</p><h1>${g.kind.split(' ')[0]} ${g.title}</h1><p>${g.en}</p></div>`;
+  const main = el('main', 'gutter');
+  const inner = el('div', 'inner');
+  const back = el('a', 'back', '← 回到護照'); back.href = '#home';
+  const head = el('div', 'game-head');
+  const progress = el('span', 'progress');
+  head.append(el('h2', '', g.kind), progress);
+  const stage = el('div', 'stage');
+  const fb = el('div', 'feedback'); fb.setAttribute('aria-live', 'polite');
+  const controls = el('div', 'controls');
+  inner.append(back, head, el('p', 'rule', g.rule), stage, fb, controls);
+
+  const qrWrap = el('details', 'teacher game-qr');
+  qrWrap.append(el('summary', '', '這一關的 QR Code'));
+  const qg = el('div', 'qr-grid'); qg.append(qrItem(g.title, linkFor(g.id)));
+  qrWrap.append(qg);
+  inner.append(qrWrap);
+  main.append(inner);
+  app.append(band, main);
+
+  const idx = GAMES.indexOf(g);
+  const ctx = {
+    stage, controls,
+    progress: t => { progress.textContent = t; },
+    feedback: (kind, html) => { fb.className = 'feedback' + (kind ? ' ' + kind : ''); fb.innerHTML = html || ''; },
+    finish: (score, total, extra) => {
+      saveBest(g.id, score, total);
+      const ratio = score / total;
+      const msg = ratio === 1 ? '太厲害了，全部答對！' : ratio >= 0.6 ? '很棒！再玩一次可以拿滿分。' : '多練習幾次就會越來越熟！';
+      stage.innerHTML = `<div class="result"><p>🎉 完成！</p><p class="big">${score} / ${total}</p><p>${msg}</p>${extra ? `<p>${extra}</p>` : ''}</div>`;
+      ctx.feedback('', '');
+      controls.innerHTML = '';
+      const again = el('button', 'btn alt', '再玩一次'); again.type = 'button'; again.onclick = () => renderGame(g);
+      controls.append(again);
+      if (idx < GAMES.length - 1){
+        const next = el('a', 'btn', `下一關：${GAMES[idx + 1].title} →`);
+        next.href = '#' + GAMES[idx + 1].id;
+        next.style.cssText = 'display:inline-flex;align-items:center;text-decoration:none';
+        controls.append(next);
+      } else {
+        const home = el('a', 'btn', '回到護照看印章');
+        home.href = '#home';
+        home.style.cssText = 'display:inline-flex;align-items:center;text-decoration:none';
+        controls.append(home);
+      }
+    }
+  };
+  g.run(ctx);
+}
+
+/* ---------- 1. Memory: countries ---------- */
+function runMemory(ctx){
+  const pairs = [['Canada','加拿大'],['Egypt','埃及'],['Finland','芬蘭'],['Italy','義大利'],['Spain','西班牙']];
+  const cards = shuffle(pairs.flatMap((p, i) => [{k:i, text:p[0], en:true}, {k:i, text:p[1], en:false}]));
+  const grid = el('div', 'mem');
+  let open = [], found = 0, tries = 0, lock = false;
+  ctx.progress('配對 0 / 5');
+  cards.forEach(c => {
+    const b = el('button', 'mcard' + (c.en ? ' en' : ''), `<span class="backface" aria-hidden="true">✈️</span><span class="face">${c.text}</span>`);
+    b.type = 'button'; b.setAttribute('aria-label', '蓋著的牌');
+    b.onclick = () => {
+      if (lock || b.classList.contains('up') || b.classList.contains('done')) return;
+      b.classList.add('up'); b.setAttribute('aria-label', c.text);
+      open.push({b, c});
+      if (open.length < 2) return;
+      tries++;
+      const [x, y] = open; open = [];
+      if (x.c.k === y.c.k && x.c.en !== y.c.en){
+        x.b.classList.replace('up', 'done'); y.b.classList.replace('up', 'done');
+        found++;
+        const p = pairs[x.c.k];
+        ctx.feedback('good', `✅ 答對了！<span class="en-big">${p[0]}</span> 是「${p[1]}」。`);
+        ctx.progress(`配對 ${found} / 5`);
+        if (found === 5) setTimeout(() => ctx.finish(5, 5, `你用了 ${tries} 次翻牌（最少只要 5 次）。`), 900);
+      } else {
+        ctx.feedback('bad', '❌ 這兩張不是一對，記住它們的位置再試一次！');
+        lock = true;
+        setTimeout(() => { [x, y].forEach(o => { o.b.classList.remove('up'); o.b.setAttribute('aria-label', '蓋著的牌'); }); lock = false; }, 1000);
+      }
+    };
+    grid.append(b);
+  });
+  ctx.stage.append(grid);
+}
+
+/* ---------- 2. Matching: activities ---------- */
+function runMatch(ctx){
+  const items = [
+    ['go snorkeling','🤿 浮潛'], ['see the maple leaves','🍁 賞楓葉'], ['watch the sunset','🌅 看日落'],
+    ['go to the hot springs','♨️ 泡溫泉'], ['visit the landmarks','🏛️ 參觀地標'],
+  ];
+  const wrap = el('div', 'match');
+  const L = el('div', 'col'), R = el('div', 'col');
+  L.append(el('h3', '', 'English')); R.append(el('h3', '', '中文'));
+  let sel = null, done = 0, firstTry = 0;
+  const missed = new Set();
+  ctx.progress('配對 0 / 5');
+  const leftBtns = shuffle(items.map((it, i) => ({it, i}))).map(({it, i}) => {
+    const b = el('button', 'pick en-big', it[0]); b.type = 'button'; b.dataset.i = i;
+    b.onclick = () => {
+      if (b.classList.contains('ok')) return;
+      leftBtns.forEach(x => x.classList.remove('sel'));
+      b.classList.add('sel'); sel = i;
+      ctx.feedback('', '');
+    };
+    L.append(b); return b;
+  });
+  shuffle(items.map((it, i) => ({it, i}))).forEach(({it, i}) => {
+    const b = el('button', 'pick', it[1]); b.type = 'button';
+    b.onclick = () => {
+      if (b.classList.contains('ok')) return;
+      if (sel === null){ ctx.feedback('bad', '先點左邊的英文片語喔！'); return; }
+      const lb = leftBtns.find(x => +x.dataset.i === sel);
+      if (sel === i){
+        lb.classList.remove('sel'); lb.classList.add('ok'); b.classList.add('ok');
+        done++; if (!missed.has(i)) firstTry++;
+        ctx.feedback('good', `✅ 對了！<span class="en-big">${it[0]}</span> = ${it[1]}`);
+        ctx.progress(`配對 ${done} / 5`);
+        sel = null;
+        if (done === 5) setTimeout(() => ctx.finish(firstTry, 5, '分數是「第一次就配對成功」的題數。'), 900);
+      } else {
+        missed.add(sel);
+        b.classList.add('no'); setTimeout(() => b.classList.remove('no'), 700);
+        ctx.feedback('bad', `❌ 不對喔。<span class="en-big">${items[sel][0]}</span> 是「${items[sel][1]}」，再找找看！`);
+      }
+    };
+    R.append(b);
+  });
+  wrap.append(L, R);
+  ctx.stage.append(wrap);
+}
+
+/* ---------- 3. Fill in: spelling ---------- */
+function runFill(ctx){
+  const qs = shuffle([
+    {zh:'🤿 浮潛', before:'go', ans:'snorkeling'},
+    {zh:'🍁 賞楓葉', before:'see the maple', ans:'leaves'},
+    {zh:'🌅 看日落', before:'watch the', ans:'sunset'},
+    {zh:'♨️ 泡溫泉', before:'go to the hot', ans:'springs'},
+    {zh:'🏛️ 參觀地標', before:'visit the', ans:'landmarks'},
+  ]);
+  let n = 0, score = 0;
+  function show(){
+    const q = qs[n]; let checked = false;
+    ctx.progress(`第 ${n + 1} / ${qs.length} 題`);
+    ctx.feedback('', '');
+    ctx.stage.innerHTML = '';
+    ctx.stage.append(el('p', 'prompt-zh', q.zh));
+    const line = el('div', 'fill-line');
+    line.append(el('span', '', q.before));
+    const input = el('input');
+    input.id = 'fill-input'; input.type = 'text'; input.autocomplete = 'off';
+    input.setAttribute('autocapitalize', 'off'); input.setAttribute('autocorrect', 'off'); input.spellcheck = false;
+    input.placeholder = '_ '.repeat(q.ans.length).trim();
+    input.setAttribute('aria-label', `填入英文單字，共 ${q.ans.length} 個字母`);
+    line.append(input);
+    ctx.stage.append(line, el('p', 'hint', `共 ${q.ans.length} 個字母`));
+    ctx.controls.innerHTML = '';
+    const check = el('button', 'btn', '檢查'); check.type = 'button';
+    const hint = el('button', 'btn alt', '提示：第一個字母'); hint.type = 'button';
+    hint.onclick = () => { if (!input.value) input.value = q.ans[0]; ctx.stage.querySelector('.hint').textContent = `第一個字母是 ${q.ans[0]}，共 ${q.ans.length} 個字母`; input.focus(); };
+    check.onclick = () => {
+      if (checked){ n++; n < qs.length ? show() : ctx.finish(score, qs.length); return; }
+      const v = input.value.trim().toLowerCase().replace(/\s+/g, ' ');
+      if (!v){ ctx.feedback('bad', '先輸入答案再檢查喔！'); input.focus(); return; }
+      checked = true; input.disabled = true; hint.disabled = true;
+      if (v === q.ans){ score++; ctx.feedback('good', `✅ 拼對了！<span class="en-big">${q.before} ${q.ans}</span>`); }
+      else ctx.feedback('bad', `❌ 正確答案是 <span class="en-big">${q.before} <u>${q.ans}</u></span>`);
+      check.textContent = n < qs.length - 1 ? '下一題 →' : '看成績';
+      check.focus();
+    };
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') check.click(); });
+    ctx.controls.append(check, hint);
+    input.focus({preventScroll:true});
+  }
+  show();
+}
+
+/* ---------- 4. Ordering: sentences ---------- */
+function runOrder(ctx){
+  const qs = shuffle([
+    {zh:'放假你要做什麼？', s:"What are you going to do for the holiday break?"},
+    {zh:'我要去芬蘭拜訪我的朋友。', s:"I'm going to visit my friend in Finland."},
+    {zh:'我們要去夏威夷。', s:"We're going to go to Hawaii."},
+    {zh:'你要去哪裡？', s:"Where are you going to go?"},
+    {zh:'我等不及要去浮潛了！', s:"I can't wait to go snorkeling!"},
+  ]);
+  let n = 0, score = 0;
+  function show(){
+    const q = qs[n], words = q.s.split(' ');
+    let order = shuffle(words.map((w, i) => i));
+    if (order.every((v, i) => v === i)) order = order.slice().reverse();
+    const picked = []; let checked = false;
+    ctx.progress(`第 ${n + 1} / ${qs.length} 題`);
+    ctx.feedback('', '');
+    ctx.stage.innerHTML = '';
+    ctx.stage.append(el('p', 'prompt-zh', q.zh));
+    const ans = el('div', 'answer-line'), bank = el('div', 'bank');
+    ctx.stage.append(ans, bank);
+    const chips = {};
+    order.forEach(i => {
+      const c = el('button', 'chip', words[i]); c.type = 'button'; chips[i] = c;
+      c.onclick = () => {
+        if (checked) return;
+        const at = picked.indexOf(i);
+        if (at >= 0){ picked.splice(at, 1); bank.append(c); }
+        else { picked.push(i); ans.append(c); }
+        check.disabled = picked.length !== words.length;
+      };
+      bank.append(c);
+    });
+    ctx.controls.innerHTML = '';
+    const check = el('button', 'btn', '檢查'); check.type = 'button'; check.disabled = true;
+    const clear = el('button', 'btn alt', '重排'); clear.type = 'button';
+    clear.onclick = () => { if (checked) return; picked.length = 0; order.forEach(i => bank.append(chips[i])); check.disabled = true; };
+    check.onclick = () => {
+      if (checked){ n++; n < qs.length ? show() : ctx.finish(score, qs.length); return; }
+      checked = true; clear.disabled = true;
+      const built = picked.map(i => words[i]).join(' ');
+      if (built === q.s){ score++; ctx.feedback('good', `✅ 完全正確！<br><span class="en-big">${q.s}</span>`); }
+      else ctx.feedback('bad', `❌ 正確的句子是：<br><span class="en-big">${q.s}</span>`);
+      check.textContent = n < qs.length - 1 ? '下一題 →' : '看成績';
+    };
+    ctx.controls.append(check, clear);
+  }
+  show();
+}
+
+/* ---------- 5. MCQ: dialogue ---------- */
+function runMCQ(ctx){
+  const qs = shuffle([
+    {q:'Vicky 放假要和家人去哪裡？', a:'Hawaii 夏威夷', o:['Finland 芬蘭','Canada 加拿大','Egypt 埃及'], why:'Vicky 說：We\'re going to go to Hawaii.'},
+    {q:'Vicky 等不及要去做什麼？', a:'go snorkeling 浮潛', o:['see the maple leaves 賞楓葉','go to the hot springs 泡溫泉','watch the sunset 看日落'], why:'Vicky 說：I can\'t wait to go snorkeling!'},
+    {q:'Fred 要去哪個國家拜訪朋友？', a:'Finland 芬蘭', o:['Italy 義大利','Spain 西班牙','Canada 加拿大'], why:'Fred 說：I\'m going to visit my friend in Finland.'},
+    {q:'Fred 在那裡要住在哪裡？', a:'an igloo 冰屋', o:['a hotel 飯店','a tent 帳篷','a boat 船'], why:'Fred 說：We\'re going to live in an igloo!'},
+    {q:'Fred 為什麼要帶毛衣和手套？', a:'因為那裡很冷', o:['因為要去浮潛','因為要送給朋友','因為要去看日落'], why:'Vicky 說芬蘭 very cold，要 keep warm。'},
+    {q:'Vicky 提醒 Fred 不要忘記做什麼？', a:'take photos 拍照', o:['buy gifts 買禮物','write a letter 寫信','call her 打電話給她'], why:'Vicky 說：Don\'t forget to take photos!'},
+  ]);
+  let n = 0, score = 0;
+  function show(){
+    const q = qs[n];
+    ctx.progress(`第 ${n + 1} / ${qs.length} 題`);
+    ctx.feedback('', '');
+    ctx.stage.innerHTML = '';
+    ctx.controls.innerHTML = '';
+    ctx.stage.append(el('p', 'q', q.q));
+    const opts = el('div', 'opts');
+    const all = shuffle([q.a, ...q.o]);
+    const btns = all.map(t => {
+      const b = el('button', 'opt', t); b.type = 'button';
+      b.onclick = () => {
+        btns.forEach(x => { x.disabled = true; if (x.textContent === q.a) x.classList.add('ok'); });
+        if (t === q.a){ score++; ctx.feedback('good', `✅ 答對了！${q.why}`); }
+        else { b.classList.add('no'); ctx.feedback('bad', `❌ 正確答案是「${q.a}」。${q.why}`); }
+        const next = el('button', 'btn', n < qs.length - 1 ? '下一題 →' : '看成績'); next.type = 'button';
+        next.onclick = () => { n++; n < qs.length ? show() : ctx.finish(score, qs.length); };
+        ctx.controls.append(next); next.focus();
+      };
+      opts.append(b); return b;
+    });
+    ctx.stage.append(opts);
+  }
+  show();
+}
+
+/* ---------- Router ---------- */
+function route(){
+  const id = location.hash.replace('#', '');
+  const g = GAMES.find(x => x.id === id);
+  g ? renderGame(g) : renderHome();
+  window.scrollTo(0, 0);
+}
+window.addEventListener('hashchange', route);
+route();
+</script>
+
+</body>
+</html>
